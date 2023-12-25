@@ -16,18 +16,18 @@ class Game
     @code
     @breaker
     @maker
+    @turn = 1
   end
 
   attr_accessor :breaker, :maker
-  public attr_accessor :code
+  public attr_accessor :code, :guess_code, :turn
   
   public def play
     print_instructions
     choose_roles
     maker.make_code
-    turn = 1
     loop do
-      guess_code = breaker.break_code(turn, guess_code)
+      print_guess
       if code_broken?(guess_code)
         puts "#{breaker} broke it!! Game over."
         break
@@ -35,14 +35,17 @@ class Game
         puts "The turns have run out! Game over. #{maker} wins."
         break
       end
-      puts 'Wrong guess.'
-      turn += 1
+      @turn += 1
     end
   end
   
-  def colorful(num)
-    color = COLORS[num]
-    " #{num} ".colorize(:color => :black, :background => color)
+  public def colorful(code)
+    arr = []
+    code.to_s.delete(' ').split('').each do |char|
+      color = COLORS[char.to_i]
+      arr << " #{char} ".colorize(:color => :black, :background => color)
+    end
+    arr.join(" ")
   end
 
   def print_instructions
@@ -62,12 +65,12 @@ class Game
     
     There are six different number/color combinations:
     
-    #{colorful(1)} #{colorful(2)} #{colorful(3)} #{colorful(4)} #{colorful(5)} #{colorful(6)}
+    #{colorful(123456)}
     
     
     The code maker must select a four-digit number to create a 'master code'. For example:
     
-    #{colorful(1)} #{colorful(3)} #{colorful(4)} #{colorful(1)}
+    #{colorful(1341)}
     
     As you can see, #{"numbers/colors can be repeated".yellow}.
     To win, the code breaker needs to guess the 'master code' in 12 turns or less.
@@ -84,10 +87,10 @@ class Game
     #{"Clue Example:".black.on_light_white}
     To continue the example, using the above 'master code' a guess of "1463" would produce 3 clues:
     
-    #{colorful(1)} #{colorful(4)} #{colorful(6)} #{colorful(3)}  Clues: ● ○ ○ 
+    #{colorful(1463)}  Clues: ● ○ ○ 
     
     The guess had 1 correct number in the correct location and 2 correct numbers in a wrong location.
-    __________________________________________________
+    __________________________________________________\n
       HEREDOC
   end
 
@@ -96,12 +99,12 @@ class Game
     loop do
       answer = gets.chomp.downcase
       if answer == 'm'
-        @maker = HumanPlayer.new(self, 'maker')
-        @breaker = ComputerPlayer.new(self, 'breaker') #видалити @role якщо вони не використовуватимуться
+        @maker = HumanPlayer.new(self)
+        @breaker = ComputerPlayer.new(self)
         break
       elsif answer == 'b'
-        @breaker = HumanPlayer.new(self, 'breaker')
-        @maker = ComputerPlayer.new(self, 'maker')
+        @breaker = HumanPlayer.new(self,)
+        @maker = ComputerPlayer.new(self)
         break
       end
     end
@@ -110,14 +113,18 @@ class Game
   def code_broken?(guess_code)
     code == guess_code
   end
+
+  def print_guess
+    @guess_code = breaker.break_code(turn, guess_code)
+    puts "#{colorful(guess_code)}  #{maker.feedback(code, guess_code)}"
+  end
 end
 
 class Player
   private
 
-  def initialize(game, role)
+  def initialize(game)
     @game = game
-    @role = role
   end
 
   attr_accessor :game
@@ -125,9 +132,27 @@ end
 
 class ComputerPlayer < Player
   def make_code
-    game.code = ' ' + rand(1111..6666).to_s # ignore index 0 for convenience
+    game.code = ""
+    4.times { game.code += rand(1..6).to_s }
     puts 'The computer has chosen its secret code.'
     p game.code
+  end
+
+  def feedback(code, guess_code)
+    result = ""
+    guess_arr = guess_code.split('')
+    guess_arr.each_with_index do |char, i|
+      if char == code[i]
+        result += "●"
+      end
+    end
+    guess_arr = guess_arr.filter.with_index { |num, i| num != code[i] }
+    guess_arr.each do |char|
+      if code.include?(char)
+        result += "○"
+      end
+    end
+    result
   end
 
   private
@@ -144,7 +169,8 @@ class HumanPlayer < Player
 
   def break_code(turn, guess_code)
     puts "Turn #{turn}: Enter four digits (1-6) to guess the code"
-    guess_code = ' ' + gets.chomp # ignore index 0 for convenience
+    guess_code = gets.chomp
+    guess_code
   end
 
   private
