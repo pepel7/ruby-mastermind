@@ -18,19 +18,26 @@ class Game
     @maker
   end
 
-  attr_accessor :code, :breaker, :maker
+  attr_accessor :breaker, :maker
+  public attr_accessor :code
   
-  def play
+  public def play
     print_instructions
     choose_roles
     maker.make_code
-    turn = 12
-    while turn > 0
-      breaker.break_code
-      turn -= 1
-      break if code_broken?
+    turn = 1
+    loop do
+      guess_code = breaker.break_code(turn, guess_code)
+      if code_broken?(guess_code)
+        puts "#{breaker} broke it!! Game over."
+        break
+      elsif turn > 12
+        puts "The turns have run out! Game over. #{maker} wins."
+        break
+      end
+      puts 'Wrong guess.'
+      turn += 1
     end
-    game_results
   end
   
   def colorful(num)
@@ -39,7 +46,7 @@ class Game
   end
 
   def print_instructions
-    puts 'Do you know how to play this game?'
+    puts "Do you know how to play this game? \n#{"(Enter 'no' if you don't, or anything else if you know the rules)".gray}"
     knows = gets.chomp.downcase == 'no' ? false : true 
     unless knows
       puts instructions
@@ -85,14 +92,14 @@ class Game
   end
 
   def choose_roles
-    puts "Who would you like to be? Type 'maker' or 'breaker'."
+    puts "Who would you like to be? Type 'm' for maker or 'b' for breaker."
     loop do
       answer = gets.chomp.downcase
-      if answer == 'maker'
+      if answer == 'm'
         @maker = HumanPlayer.new(self, 'maker')
-        @breaker = ComputerPlayer.new(self, 'breaker')
+        @breaker = ComputerPlayer.new(self, 'breaker') #видалити @role якщо вони не використовуватимуться
         break
-      elsif answer == 'breaker'
+      elsif answer == 'b'
         @breaker = HumanPlayer.new(self, 'breaker')
         @maker = ComputerPlayer.new(self, 'maker')
         break
@@ -103,10 +110,6 @@ class Game
   def code_broken?(guess_code)
     code == guess_code
   end
-
-  def game_results
-
-  end
 end
 
 class Player
@@ -115,29 +118,39 @@ class Player
   def initialize(game, role)
     @game = game
     @role = role
-    if role == 'breaker'
-      game.breaker = self
-    else
-      game.maker = self
-    end
   end
 
   attr_accessor :game
 end
 
 class ComputerPlayer < Player
+  def make_code
+    game.code = ' ' + rand(1111..6666).to_s # ignore index 0 for convenience
+    puts 'The computer has chosen its secret code.'
+    p game.code
+  end
+
   private
 
-  def make_code
-    game.code = " " + rand(1111..6666).to_s # ignore index 0 for convenience
+  def to_s
+    'Computer'
   end
 end
 
 class HumanPlayer < Player
-  private
-
   def make_code
     game.code = gets.chomp
+  end
+
+  def break_code(turn, guess_code)
+    puts "Turn #{turn}: Enter four digits (1-6) to guess the code"
+    guess_code = ' ' + gets.chomp # ignore index 0 for convenience
+  end
+
+  private
+
+  def to_s
+    'Human'
   end
 end
 
