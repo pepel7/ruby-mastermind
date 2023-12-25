@@ -31,7 +31,7 @@ class Game
       if code_broken?(guess_code)
         puts "#{breaker} broke it!! Game over."
         break
-      elsif turn > 12
+      elsif turn == 12
         puts "The turns have run out! Game over. #{maker} wins."
         break
       end
@@ -115,7 +115,7 @@ class Game
   end
 
   def print_guess
-    @guess_code = breaker.break_code(turn, guess_code)
+    @guess_code = breaker.break_code(turn)
     puts "#{colorful(guess_code)}  #{maker.feedback(code, guess_code)}"
   end
 end
@@ -152,7 +152,7 @@ class ComputerPlayer < Player
         result += "○"
       end
     end
-    result
+    result.split('').join(' ')
   end
 
   private
@@ -167,10 +167,13 @@ class HumanPlayer < Player
     game.code = gets.chomp
   end
 
-  def break_code(turn, guess_code)
+  def break_code(turn)
     puts "Turn #{turn}: Enter four digits (1-6) to guess the code"
-    guess_code = gets.chomp
-    guess_code
+    loop do
+      guess = gets.chomp
+      break guess if !!(guess =~ (/^[1-6]{4}$/))
+      puts "Hey, it's not four digits from 1 to 6".red
+    end
   end
 
   private
