@@ -138,20 +138,41 @@ class ComputerPlayer < Player
     p game.code
   end
 
-  def feedback(code, guess_code)
+  def find_exactly_correct(code, guess_code)
     result = ""
     guess_arr = guess_code.split('')
+  
     guess_arr.each_with_index do |char, i|
       if char == code[i]
         result += "●"
       end
     end
-    guess_arr = guess_arr.filter.with_index { |num, i| num != code[i] }
-    guess_arr.each do |char|
+    result
+  end
+
+  def find_half_correct(code, guess_code, previous_result)
+    result = previous_result
+    guess_arr = guess_code.split('')
+    code_arr = code.split('')
+
+    exactly_equal_arr  = guess_arr.filter.with_index { |num, i| num == code[i] }
+    not_equal_arr = guess_arr.filter.with_index { |num, i| num != code[i] }
+  
+    not_equal_arr.each_with_index do |char, i|
+      next if code_arr.count(char) == exactly_equal_arr.count(char)
+      next if char == not_equal_arr[i - 1]
+
       if code.include?(char)
         result += "○"
       end
     end
+    result
+  end
+
+  def feedback(code, guess_code)
+    result = find_exactly_correct(code, guess_code)
+    result = find_half_correct(code, guess_code, result)
+
     result.split('').join(' ')
   end
 
